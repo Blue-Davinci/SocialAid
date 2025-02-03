@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
@@ -18,7 +17,7 @@ RETURNING id, created_at, updated_at
 `
 
 type CreateNewProgramParams struct {
-	Name        sql.NullString
+	Name        string
 	Category    string
 	Description string
 }

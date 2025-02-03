@@ -5,13 +5,12 @@
 package database
 
 import (
-	"database/sql"
 	"time"
 )
 
 type Program struct {
 	ID          int32
-	Name        sql.NullString
+	Name        string
 	Category    string
 	Description string
 	CreatedAt   time.Time
