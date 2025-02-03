@@ -19,7 +19,7 @@ func (app *application) createNewProgramdHandler(w http.ResponseWriter, r *http.
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		// output a bad request error
-		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+		app.badRequestResponse(w, r, err)
 		return
 	}
 	// create a new Program struct and read the input struct to it
@@ -32,7 +32,7 @@ func (app *application) createNewProgramdHandler(w http.ResponseWriter, r *http.
 	// validate
 	v := validator.New()
 	if data.ValidateProgram(v, program); !v.Valid() {
-		app.errorResponse(w, r, http.StatusUnprocessableEntity, v.Errors)
+		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 	// we are good now, lets create the program
@@ -40,15 +40,16 @@ func (app *application) createNewProgramdHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrDuplicateProgram):
-			app.errorResponse(w, r, http.StatusConflict, "program name already exists")
+			v.AddError("name", "a program with this name already exists")
+			app.conflictResponse(w, r, v.Errors)
 		default:
-			app.errorResponse(w, r, http.StatusInternalServerError, err.Error())
+			app.serverErrorResponse(w, r, err)
 		}
 		return
 	}
 	// output to client
 	err = app.writeJSON(w, http.StatusCreated, envelope{"program": program}, nil)
 	if err != nil {
-		app.errorResponse(w, r, http.StatusInternalServerError, err.Error())
+		app.serverErrorResponse(w, r, err)
 	}
 }
