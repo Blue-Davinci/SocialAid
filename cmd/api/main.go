@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Blue-Davinci/SocialAid/internal/data"
 	"github.com/Blue-Davinci/SocialAid/internal/database"
 	"github.com/Blue-Davinci/SocialAid/internal/logger"
 	_ "github.com/lib/pq"
@@ -34,6 +35,7 @@ type config struct {
 type application struct {
 	config config
 	logger *zap.Logger
+	models data.Models
 }
 
 func main() {
@@ -59,11 +61,19 @@ func main() {
 	// Encryption key
 	flag.StringVar(&cfg.encryption.key, "encryption-key", os.Getenv("SOCIALAID_DATA_ENCRYPTION_KEY"), "Encryption key")
 
+	// create our connection pull
+	db, err := openDB(cfg)
+	if err != nil {
+		logger.Fatal(err.Error(), zap.String("dsn", cfg.db.dsn))
+	}
+	logger.Info("database connection pool established", zap.String("dsn", cfg.db.dsn))
 	// create dependancies
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
+
 	fmt.Println("PlaceHolder for the main application")
 	app.logger.Info("Starting the application", zap.String("env", app.config.env), zap.Int("port", app.config.port))
 }
