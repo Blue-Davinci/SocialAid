@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	ErrDuplicateProgram = errors.New("program name already exists")
+	ErrDuplicateProgram = errors.New("program's name already exists, please choose another one")
 )
 
 type Program struct {

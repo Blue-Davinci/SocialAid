@@ -48,7 +48,7 @@ func main() {
 	// set up our logger
 	logger, err := logger.InitJSONLogger()
 	if err != nil {
-		fmt.Println("Error initializing logger")
+		fmt.Println("Error initializing logger, exiting..")
 		return
 	}
 	// Load the environment variables from the .env file
