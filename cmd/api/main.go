@@ -1,11 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/Blue-Davinci/SocialAid/internal/database"
 	"github.com/Blue-Davinci/SocialAid/internal/logger"
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +49,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	// API configuration
-	flag.StringVar(&cfg.api.name, "api-name", "OptiVest", "API name")
+	flag.StringVar(&cfg.api.name, "api-name", "SocialAid", "API name")
 	flag.StringVar(&cfg.api.author, "api-author", "Brian Karicha", "API author")
 	// Database configuration
 	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("SOCIALAID_DB_DSN"), "PostgreSQL DSN")
@@ -62,4 +66,25 @@ func main() {
 	}
 	fmt.Println("PlaceHolder for the main application")
 	app.logger.Info("Starting the application", zap.String("env", app.config.env), zap.Int("port", app.config.port))
+}
+
+func openDB(cfg config) (*database.Queries, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+	if err != nil {
+		return nil, err
+	}
+	db.SetConnMaxIdleTime(duration)
+	// Use ping to establish new conncetions
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	queries := database.New(db)
+	return queries, nil
 }
