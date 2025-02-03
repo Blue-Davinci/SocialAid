@@ -11,4 +11,4 @@ CREATE TABLE programs (
 CREATE INDEX idx_programs_name ON programs(name);   
 
 -- +goose Down
-DROP TABLE programs;
+DROP TABLE IF EXISTS programs;

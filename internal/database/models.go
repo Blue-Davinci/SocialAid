@@ -8,6 +8,15 @@ import (
 	"time"
 )
 
+type Geolocation struct {
+	ID          int32
+	County      string
+	SubCounty   string
+	Location    string
+	SubLocation string
+	CreatedAt   time.Time
+}
+
 type Program struct {
 	ID          int32
 	Name        string
