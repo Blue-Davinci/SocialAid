@@ -1,4 +1,4 @@
-# Project Title
+# SocialAid Tracker
 
 ## Table of Contents
 
@@ -9,38 +9,69 @@
 
 ## About <a name = "about"></a>
 
-Write about 1-2 paragraphs describing the purpose of your project.
+SocialAid Tracker is a Management Information System (MIS) designed to track beneficiaries of social protection programs. It enables efficient storage and retrieval of program details, household geolocation data, and household member information. The system ensures data security by encrypting sensitive data such as phone numbers while providing seamless access through RESTful API endpoints.
 
 ## Getting Started <a name = "getting_started"></a>
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system.
+These instructions will help you set up SocialAid Tracker on your local machine for development and testing. See [deployment](#deployment) for details on deploying the system in a production environment.
 
 ### Prerequisites
 
-What things you need to install the software and how to install them.
+Ensure you have the following installed before proceeding:
 
 ```
-Give examples
+- Go (1.18 or later)
+- PostgreSQL (latest version)
+- Docker (optional for containerized setup)
+- Git
 ```
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running.
+Follow these steps to set up the development environment:
 
-Say what the step will be
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/Blue-Davinci/socialaid-tracker.git
+   cd socialaid-tracker
+   ```
 
-```
-Give the example
-```
+2. Set up the database:
+   ```sh
+   psql -U postgres -c "CREATE DATABASE socialaid_tracker;"
+   ```
 
-And repeat
+3. Configure environment variables (create a `.env` file):
+   ```
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=your_user
+   DB_PASSWORD=your_password
+   DB_NAME=socialaid_tracker
+   ```
 
-```
-until finished
-```
+4. Run the database migrations:
+   ```sh
+   go run migrations/migrate.go
+   ```
 
-End with an example of getting some data out of the system or using it for a little demo.
+5. Start the server:
+   ```sh
+   go run main.go
+   ```
 
 ## Usage <a name = "usage"></a>
 
-Add notes about how to use the system.
+Once the server is running, you can interact with the API using Postman or Curl:
+
+- Retrieve all households:
+  ```sh
+  curl -X GET http://localhost:8080/api/households
+  ```
+
+- Create a new beneficiary:
+  ```sh
+  curl -X POST http://localhost:8080/api/beneficiaries -d '{"name": "John Doe", "program_id": 1, "geolocation_id": 2}' -H "Content-Type: application/json"
+  ```
+
+For more details, refer to the API documentation.
