@@ -5,11 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Blue-Davinci/SocialAid/internal/data"
 	"github.com/Blue-Davinci/SocialAid/internal/database"
 	"github.com/Blue-Davinci/SocialAid/internal/logger"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
@@ -30,6 +33,9 @@ type config struct {
 	encryption struct {
 		key string
 	}
+	cors struct {
+		trustedOrigins []string
+	}
 }
 
 type application struct {
@@ -45,6 +51,8 @@ func main() {
 		fmt.Println("Error initializing logger")
 		return
 	}
+	// Load the environment variables from the .env file
+	getCurrentPath(logger)
 	// set up our config
 	var cfg config
 	// Port & env
@@ -60,6 +68,12 @@ func main() {
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
 	// Encryption key
 	flag.StringVar(&cfg.encryption.key, "encryption-key", os.Getenv("SOCIALAID_DATA_ENCRYPTION_KEY"), "Encryption key")
+	// CORS configuration
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
+		cfg.cors.trustedOrigins = strings.Fields(val)
+		return nil
+
+	})
 
 	// create our connection pull
 	db, err := openDB(cfg)
@@ -73,8 +87,11 @@ func main() {
 		logger: logger,
 		models: data.NewModels(db),
 	}
-
-	fmt.Println("PlaceHolder for the main application")
+	// start the server
+	err = app.server()
+	if err != nil {
+		logger.Fatal("Error while starting server.", zap.String("error", err.Error()))
+	}
 	app.logger.Info("Starting the application", zap.String("env", app.config.env), zap.Int("port", app.config.port))
 }
 
@@ -97,4 +114,34 @@ func openDB(cfg config) (*database.Queries, error) {
 	}
 	queries := database.New(db)
 	return queries, nil
+}
+
+// getCurrentPath invokes getEnvPath to get the path to the .env file based on the current working directory.
+// After that it loads the .env file using godotenv.Load to be used by the initFlags() function
+func getCurrentPath(logger *zap.Logger) string {
+	currentpath := getEnvPath(logger)
+	if currentpath != "" {
+		err := godotenv.Load(currentpath)
+		if err != nil {
+			logger.Fatal(err.Error(), zap.String("path", currentpath))
+		}
+	} else {
+
+		logger.Error("Path Error", zap.String("path", currentpath), zap.String("error", "unable to load .env file"))
+	}
+	logger.Info("Loading Environment Variables", zap.String("path", currentpath))
+	return currentpath
+}
+
+// getEnvPath returns the path to the .env file based on the current working directory.
+func getEnvPath(logger *zap.Logger) string {
+	dir, err := os.Getwd()
+	if err != nil {
+		logger.Fatal(err.Error(), zap.String("path", dir))
+		return ""
+	}
+	if strings.Contains(dir, "cmd/api") || strings.Contains(dir, "cmd") {
+		return ".env"
+	}
+	return filepath.Join("cmd", "api", ".env")
 }
