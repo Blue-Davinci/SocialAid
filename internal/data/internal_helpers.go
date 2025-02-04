@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/Blue-Davinci/SocialAid/internal/validator"
 )
 
 const (
@@ -28,6 +30,10 @@ var (
 // deadlines for outgoing requests in our data layer.
 func contextGenerator(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, timeout)
+}
+
+func ValidateURLID(v *validator.Validator, parameterID int64, fieldName string) {
+	v.Check(parameterID > 0, fieldName, "must be a valid ID")
 }
 
 /**

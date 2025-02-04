@@ -56,3 +56,10 @@ func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reque
 	message := "the server encountered a problem and could not process your request"
 	app.errorResponse(w, r, http.StatusInternalServerError, message)
 }
+
+// The notFoundResponse() method will be used to send a 404 Not Found status code and
+// JSON response to the client.
+func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
+	message := "the requested resource could not be found"
+	app.errorResponse(w, r, http.StatusNotFound, message)
+}

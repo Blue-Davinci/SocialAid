@@ -58,6 +58,41 @@ func (app *application) createNewHouseHoldHandler(w http.ResponseWriter, r *http
 
 }
 
+// getHouseHoldInformationHandler() is a handler that gets the information of a house hold
+// We get the ID from the request as a URL parameter, validate the input. If everything is okay,
+// we pass down the house hold information to the client
+func (app *application) getHouseHoldInformationHandler(w http.ResponseWriter, r *http.Request) {
+	// get the house hold id from the URL parameter
+	houseHoldID, err := app.readIDParam(r, "householdID")
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	// validate the household ID
+	v := validator.New()
+	if data.ValidateURLID(v, houseHoldID, "householdID"); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	// get the house hold information
+	houseHold, err := app.models.HouseHold.GetHouseHoldInformation(int32(houseHoldID), app.config.encryption.key)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrHouseHoldDoesNotExist):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	// output to client
+	err = app.writeJSON(w, http.StatusOK, envelope{"house_hold": houseHold}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+}
+
 // createNewHouseholdHeadHandler() is a handler that creates a new house hold head
 // We read the request, validate the input. If everything is okay, we pass down the
 // new household head as well as the encryption key to be saved in the database
@@ -141,6 +176,21 @@ func (app *application) createNewHouseholdMemberHandler(w http.ResponseWriter, r
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
+	// check if the household head has been created for this household
+	// if not, we return an error stating that the household head has not been created yet.
+	// This enhances data integrity
+	_, err = app.models.HouseHold.GetHouseholdHeadByHouseholdId(houseHoldMember.HouseHoldID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrHouseHoldHeadDoesNotExist):
+			v.AddError("house_hold_id", "house hold or its head does not exist")
+			app.conflictResponse(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
 	// we are good now, lets create the house hold member
 	err = app.models.HouseHold.CreateNewHouseholdMember(houseHoldMember)
 	if err != nil {

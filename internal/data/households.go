@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -18,13 +19,26 @@ const (
 )
 
 var (
-	ErrGeoLocationDoesNotExist = errors.New("geo location does not exist")
-	ErrProgramDoesNotExist     = errors.New("program does not exist")
-	ErrHouseHoldDoesNotExist   = errors.New("house hold does not exist")
-	ErrHouseHoldAlreadyExists  = errors.New("house hold already exists and has a head")
-	ErrHouseHoldMemberExists   = errors.New("house hold member already exists")
+	ErrGeoLocationDoesNotExist   = errors.New("geo location does not exist")
+	ErrProgramDoesNotExist       = errors.New("program does not exist")
+	ErrHouseHoldDoesNotExist     = errors.New("house hold does not exist")
+	ErrHouseHoldAlreadyExists    = errors.New("house hold already exists and has a head")
+	ErrHouseHoldMemberExists     = errors.New("house hold member already exists")
+	ErrHouseHoldHeadDoesNotExist = errors.New("house hold head does not exist")
 )
 
+type EnrichedHouseHold struct {
+	HouseHoldID          int32  `json:"house_hold_id"`
+	ProgramID            int32  `json:"program_id"`
+	ProgramName          string `json:"program_name"`
+	GeoLocationID        int32  `json:"geolocation_id"`
+	County               string `json:"county"`
+	SubCounty            string `json:"sub_county"`
+	HouseHoldHeadID      int32  `json:"household_head_id"`
+	HouseHoldHeadName    string `json:"household_head_name"`
+	PhoneNumber          string `json:"phone_number"`
+	HouseHoldMemberCount int64  `json:"household_member_count"`
+}
 type HouseHold struct {
 	ID            int32     `json:"id"`
 	ProgramID     int32     `json:"program_id"`
@@ -79,6 +93,77 @@ func ValidateHouseHoldMember(v *validator.Validator, h *HouseHoldMember) {
 	v.Check(h.Age != 0, "age", "must be provided")
 	v.Check(h.Relation != "", "relation", "must be provided")
 	v.Check(len(h.Relation) <= 255, "relation", "must not be more than 255 bytes long")
+}
+
+// GetHouseholdHeadByHouseholdId() retrieves a house hold head by the house hold id
+// We recieve the house hold id and return the house hold head and an error if there was an error
+// retrieving the house hold head
+func (m HouseHoldsManagerModel) GetHouseholdHeadByHouseholdId(houseHoldID int32) (*HouseHoldHead, error) {
+	// create context
+	ctx, cancel := contextGenerator(context.Background(), DefaultHouseHoldManDBContextTimeout)
+	defer cancel()
+	// get the house hold head
+	houseHoldHead, err := m.DB.GetHouseholdHeadByHouseholdId(ctx, houseHoldID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrHouseHoldHeadDoesNotExist
+		default:
+			return nil, err
+		}
+	}
+	// return the house hold head
+	return &HouseHoldHead{
+		ID:          houseHoldHead.ID,
+		HouseHoldID: houseHoldHead.HouseholdID,
+		Name:        houseHoldHead.Name,
+		NationalID:  houseHoldHead.NationalID,
+		PhoneNumber: houseHoldHead.PhoneNumber,
+		Age:         houseHoldHead.Age,
+		CreatedAt:   houseHoldHead.CreatedAt,
+		UpdatedAt:   houseHoldHead.UpdatedAt,
+	}, nil
+}
+
+// GetHouseHoldInformation() retrieves a house hold by the house hold id
+// We recieve the house hold id and return the house hold and an error if there was an error
+// retrieving the house hold
+func (m HouseHoldsManagerModel) GetHouseHoldInformation(houseHoldID int32, encryption_key string) ([]*EnrichedHouseHold, error) {
+	// create context
+	ctx, cancel := contextGenerator(context.Background(), DefaultHouseHoldManDBContextTimeout)
+	defer cancel()
+	// get the house hold
+	houseHolds, err := m.DB.GetHouseHoldInformation(ctx, houseHoldID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrHouseHoldDoesNotExist
+		default:
+			return nil, err
+		}
+	}
+	// confirm length is not 0
+	if len(houseHolds) == 0 {
+		return nil, ErrHouseHoldDoesNotExist
+	}
+	// populate the households to the enriched household
+	enrichedHouseHolds := []*EnrichedHouseHold{}
+	for _, enrichedHousehold := range houseHolds {
+		enrichedHouseHolds = append(enrichedHouseHolds, &EnrichedHouseHold{
+			HouseHoldID:          enrichedHousehold.HouseholdID,
+			ProgramID:            enrichedHousehold.ProgramID,
+			ProgramName:          enrichedHousehold.ProgramName,
+			GeoLocationID:        enrichedHousehold.GeolocationID,
+			County:               enrichedHousehold.County,
+			SubCounty:            enrichedHousehold.SubCounty,
+			HouseHoldHeadID:      enrichedHousehold.HouseholdHeadID,
+			HouseHoldHeadName:    enrichedHousehold.HouseholdHeadName,
+			PhoneNumber:          enrichedHousehold.PhoneNumber,
+			HouseHoldMemberCount: enrichedHousehold.HouseholdMemberCount,
+		})
+	}
+	// return the house hold
+	return enrichedHouseHolds, nil
 }
 
 // CreateNewHouseHold() creates a new house hold in the database

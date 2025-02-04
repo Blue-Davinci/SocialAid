@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // Define an envelope type.
@@ -106,4 +109,16 @@ func (app *application) jsonReadAndHandleError(err error) error {
 		}
 	}
 	return nil
+}
+
+// Retrieve the "id" URL parameter from the current request context, then convert it to
+// an integer and return it. If the operation isn't successful, return a nil UUID and an error.
+func (app *application) readIDParam(r *http.Request, parameterName string) (int64, error) {
+	// We use chi's URLParam method to get our ID parameter from the URL.
+	params := chi.URLParam(r, parameterName)
+	id, err := strconv.ParseInt(params, 10, 64)
+	if err != nil || id < 1 {
+		return 0, errors.New("invalid i-id parameter")
+	}
+	return id, nil
 }

@@ -45,6 +45,7 @@ func (app *application) geoLocationRoutes() http.Handler {
 // houseHoldRoutes() is a route handler responsible for all house hold routes
 func (app *application) houseHoldRoutes() http.Handler {
 	router := chi.NewRouter()
+	router.Get("/{householdID}", app.getHouseHoldInformationHandler)
 	router.Post("/", app.createNewHouseHoldHandler)
 
 	// household head

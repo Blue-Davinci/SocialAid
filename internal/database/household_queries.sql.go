@@ -97,3 +97,101 @@ func (q *Queries) CreateNewHouseholdMember(ctx context.Context, arg CreateNewHou
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
+
+const getHouseHoldInformation = `-- name: GetHouseHoldInformation :many
+SELECT 
+    h.id AS household_id, 
+    h.program_id, 
+    p.name AS program_name, 
+    h.geolocation_id, 
+    g.county, 
+    g.sub_county, 
+    hh.id AS household_head_id, 
+    hh.name AS household_head_name, 
+    hh.phone_number,
+    COUNT(hm.id) AS household_member_count
+FROM households h
+JOIN programs p ON h.program_id = p.id
+JOIN geolocations g ON h.geolocation_id = g.id
+JOIN household_heads hh ON hh.household_id = h.id
+LEFT JOIN household_members hm ON hm.household_id = h.id
+WHERE h.id = $1
+GROUP BY h.id, p.id, g.id, hh.id
+`
+
+type GetHouseHoldInformationRow struct {
+	HouseholdID          int32
+	ProgramID            int32
+	ProgramName          string
+	GeolocationID        int32
+	County               string
+	SubCounty            string
+	HouseholdHeadID      int32
+	HouseholdHeadName    string
+	PhoneNumber          string
+	HouseholdMemberCount int64
+}
+
+func (q *Queries) GetHouseHoldInformation(ctx context.Context, id int32) ([]GetHouseHoldInformationRow, error) {
+	rows, err := q.db.QueryContext(ctx, getHouseHoldInformation, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetHouseHoldInformationRow
+	for rows.Next() {
+		var i GetHouseHoldInformationRow
+		if err := rows.Scan(
+			&i.HouseholdID,
+			&i.ProgramID,
+			&i.ProgramName,
+			&i.GeolocationID,
+			&i.County,
+			&i.SubCounty,
+			&i.HouseholdHeadID,
+			&i.HouseholdHeadName,
+			&i.PhoneNumber,
+			&i.HouseholdMemberCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getHouseholdHeadByHouseholdId = `-- name: GetHouseholdHeadByHouseholdId :one
+SELECT
+    id,
+    household_id,
+    name,
+    national_id,
+    phone_number,
+    age,
+    created_at,
+    updated_at
+FROM household_heads
+WHERE household_id = $1
+`
+
+func (q *Queries) GetHouseholdHeadByHouseholdId(ctx context.Context, householdID int32) (HouseholdHead, error) {
+	row := q.db.QueryRowContext(ctx, getHouseholdHeadByHouseholdId, householdID)
+	var i HouseholdHead
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.Name,
+		&i.NationalID,
+		&i.PhoneNumber,
+		&i.Age,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
