@@ -32,6 +32,7 @@ func (app *application) routes() http.Handler {
 func (app *application) programRoutes() http.Handler {
 	router := chi.NewRouter()
 	router.Post("/", app.createNewProgramdHandler)
+	router.Patch("/{programID}", app.updateProgramByIdHandler)
 	return router
 }
 

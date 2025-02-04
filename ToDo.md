@@ -12,4 +12,5 @@ Please not that **This is a DEMO project**. Despite this, there are a few additi
  - Add auth capability
  - Add middleware for additional support such as for rate limitation etc.
  ~~- Add phone encryption and decryption~~
- - Include additional endpoint for better usage
+ - Include additionals endpoint for better usage.
+ - Add versioning info to tables that may have crushes due to updates

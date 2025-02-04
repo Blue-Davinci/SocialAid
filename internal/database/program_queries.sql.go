@@ -34,3 +34,59 @@ func (q *Queries) CreateNewProgram(ctx context.Context, arg CreateNewProgramPara
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
+
+const getProgramById = `-- name: GetProgramById :one
+SELECT 
+    id,
+    name,
+    category,
+    description,
+    created_at,
+    updated_at
+FROM programs
+WHERE id = $1
+`
+
+func (q *Queries) GetProgramById(ctx context.Context, id int32) (Program, error) {
+	row := q.db.QueryRowContext(ctx, getProgramById, id)
+	var i Program
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Category,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateProgramById = `-- name: UpdateProgramById :one
+UPDATE programs
+SET 
+    name = $2,
+    category = $3,
+    description = $4,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING updated_at
+`
+
+type UpdateProgramByIdParams struct {
+	ID          int32
+	Name        string
+	Category    string
+	Description string
+}
+
+func (q *Queries) UpdateProgramById(ctx context.Context, arg UpdateProgramByIdParams) (time.Time, error) {
+	row := q.db.QueryRowContext(ctx, updateProgramById,
+		arg.ID,
+		arg.Name,
+		arg.Category,
+		arg.Description,
+	)
+	var updated_at time.Time
+	err := row.Scan(&updated_at)
+	return updated_at, err
+}
