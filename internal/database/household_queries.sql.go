@@ -66,3 +66,34 @@ func (q *Queries) CreateNewHouseholdHead(ctx context.Context, arg CreateNewHouse
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
+
+const createNewHouseholdMember = `-- name: CreateNewHouseholdMember :one
+INSERT INTO household_members (household_id, name, age, relation)
+VALUES ($1, $2, $3, $4)
+RETURNING id, created_at, updated_at
+`
+
+type CreateNewHouseholdMemberParams struct {
+	HouseholdID int32
+	Name        string
+	Age         int32
+	Relation    string
+}
+
+type CreateNewHouseholdMemberRow struct {
+	ID        int32
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (q *Queries) CreateNewHouseholdMember(ctx context.Context, arg CreateNewHouseholdMemberParams) (CreateNewHouseholdMemberRow, error) {
+	row := q.db.QueryRowContext(ctx, createNewHouseholdMember,
+		arg.HouseholdID,
+		arg.Name,
+		arg.Age,
+		arg.Relation,
+	)
+	var i CreateNewHouseholdMemberRow
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
+	return i, err
+}

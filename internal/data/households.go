@@ -22,6 +22,7 @@ var (
 	ErrProgramDoesNotExist     = errors.New("program does not exist")
 	ErrHouseHoldDoesNotExist   = errors.New("house hold does not exist")
 	ErrHouseHoldAlreadyExists  = errors.New("house hold already exists and has a head")
+	ErrHouseHoldMemberExists   = errors.New("house hold member already exists")
 )
 
 type HouseHold struct {
@@ -43,6 +44,16 @@ type HouseHoldHead struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type HouseHoldMember struct {
+	ID          int32     `json:"id"`
+	HouseHoldID int32     `json:"house_hold_id"`
+	Name        string    `json:"name"`
+	Age         int32     `json:"age"`
+	Relation    string    `json:"relation"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // ValidateHouseHold() validates the house hold struct
 func ValidateHouseHold(v *validator.Validator, h *HouseHold) {
 	v.Check(h.ProgramID != 0, "program_id", "must be provided")
@@ -59,6 +70,15 @@ func ValidateHouseHoldHead(v *validator.Validator, h *HouseHoldHead) {
 	v.Check(len(h.NationalID) <= 15, "national_id", "must not be more than 255 bytes long")
 	v.Check(h.PhoneNumber != "", "phone_number", "must be provided")
 	v.Check(h.Age != 0, "age", "must be provided")
+}
+
+func ValidateHouseHoldMember(v *validator.Validator, h *HouseHoldMember) {
+	v.Check(h.HouseHoldID != 0, "house_hold_id", "must be provided")
+	v.Check(h.Name != "", "name", "must be provided")
+	v.Check(len(h.Name) <= 255, "name", "must not be more than 255 bytes long")
+	v.Check(h.Age != 0, "age", "must be provided")
+	v.Check(h.Relation != "", "relation", "must be provided")
+	v.Check(len(h.Relation) <= 255, "relation", "must not be more than 255 bytes long")
 }
 
 // CreateNewHouseHold() creates a new house hold in the database
@@ -132,6 +152,38 @@ func (m HouseHoldsManagerModel) CreateNewHouseholdHead(houseHoldHead *HouseHoldH
 	houseHoldHead.ID = houseHoldHeadInfo.ID
 	houseHoldHead.CreatedAt = houseHoldHeadInfo.CreatedAt
 	houseHoldHead.UpdatedAt = houseHoldHeadInfo.UpdatedAt
+	// return nil if everything is successful
+	return nil
+}
+
+// CreateNewHouseholdMember() creates a new house hold member in the database
+// We recieve a pointer to a HouseHold struct and return an error if the house hold already has a head or
+// if there was an error creating the house hold head.
+func (m HouseHoldsManagerModel) CreateNewHouseholdMember(houseHoldMember *HouseHoldMember) error {
+	// create context
+	ctx, cancel := contextGenerator(context.Background(), DefaultHouseHoldManDBContextTimeout)
+	defer cancel()
+	// create new house hold member
+	houseHoldMemberInfo, err := m.DB.CreateNewHouseholdMember(ctx, database.CreateNewHouseholdMemberParams{
+		HouseholdID: houseHoldMember.HouseHoldID,
+		Name:        houseHoldMember.Name,
+		Age:         houseHoldMember.Age,
+		Relation:    houseHoldMember.Relation,
+	})
+	if err != nil {
+		switch {
+		case err.Error() == `pq: insert or update on table "household_members" violates foreign key constraint "household_members_household_id_fkey"`:
+			return ErrHouseHoldDoesNotExist
+		case err.Error() == `pq: duplicate key value violates unique constraint "unique_household_member"`:
+			return ErrHouseHoldMemberExists
+		default:
+			return err
+		}
+	}
+	// set the new house hold member info
+	houseHoldMember.ID = houseHoldMemberInfo.ID
+	houseHoldMember.CreatedAt = houseHoldMemberInfo.CreatedAt
+	houseHoldMember.UpdatedAt = houseHoldMemberInfo.UpdatedAt
 	// return nil if everything is successful
 	return nil
 }

@@ -7,7 +7,8 @@ CREATE TABLE household_members (
     age INT NOT NULL,
     relation VARCHAR(50) NOT NULL,
     created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT unique_household_member UNIQUE (household_id, name)
 );
 
 -- Index on household_id

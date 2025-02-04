@@ -49,5 +49,7 @@ func (app *application) houseHoldRoutes() http.Handler {
 
 	// household head
 	router.Post("/head", app.createNewHouseholdHeadHandler)
+	// household member
+	router.Post("/member", app.createNewHouseholdMemberHandler)
 	return router
 }

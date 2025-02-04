@@ -111,3 +111,55 @@ func (app *application) createNewHouseholdHeadHandler(w http.ResponseWriter, r *
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+// createNewHouseholdMemberHandler() is a handler that creates a new house hold member
+// We read the request, validate the input. If everything is okay, we pass down the
+// new household member to be saved in the database
+func (app *application) createNewHouseholdMemberHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		HouseHoldID int32  `json:"house_hold_id"`
+		Name        string `json:"name"`
+		Age         int32  `json:"age"`
+		Relation    string `json:"relation"`
+	}
+	// read the request to the input struct
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	// create a new HouseHoldMember struct and read the input struct to it
+	houseHoldMember := &data.HouseHoldMember{
+		HouseHoldID: input.HouseHoldID,
+		Name:        input.Name,
+		Age:         input.Age,
+		Relation:    input.Relation,
+	}
+	// validate the house hold member struct
+	v := validator.New()
+	if data.ValidateHouseHoldMember(v, houseHoldMember); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	// we are good now, lets create the house hold member
+	err = app.models.HouseHold.CreateNewHouseholdMember(houseHoldMember)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrHouseHoldDoesNotExist):
+			v.AddError("house_hold_id", "house hold does not exist")
+			app.conflictResponse(w, r, v.Errors)
+		case errors.Is(err, data.ErrHouseHoldMemberExists):
+			v.AddError("house_hold_id", "house hold member already exists")
+			app.conflictResponse(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// output to client
+	err = app.writeJSON(w, http.StatusCreated, envelope{"house_hold_member": houseHoldMember}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

@@ -9,6 +9,6 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING id, created_at, updated_at;
 
 -- name: CreateNewHouseholdMember :one
-INSERT INTO household_members (household_id, name, age, relation, occupation)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO household_members (household_id, name, age, relation)
+VALUES ($1, $2, $3, $4)
 RETURNING id, created_at, updated_at;
