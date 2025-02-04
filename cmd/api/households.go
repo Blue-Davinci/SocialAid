@@ -57,3 +57,57 @@ func (app *application) createNewHouseHoldHandler(w http.ResponseWriter, r *http
 	}
 
 }
+
+// createNewHouseholdHeadHandler() is a handler that creates a new house hold head
+// We read the request, validate the input. If everything is okay, we pass down the
+// new household head as well as the encryption key to be saved in the database
+func (app *application) createNewHouseholdHeadHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		HouseHoldID int32  `json:"house_hold_id"`
+		Name        string `json:"name"`
+		NationalID  string `json:"national_id"`
+		PhoneNumber string `json:"phone_number"`
+		Age         int32  `json:"age"`
+	}
+	// read the request to the input struct
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	// create a new HouseHoldHead struct and read the input struct to it
+	houseHoldHead := &data.HouseHoldHead{
+		HouseHoldID: input.HouseHoldID,
+		Name:        input.Name,
+		NationalID:  input.NationalID,
+		PhoneNumber: input.PhoneNumber,
+		Age:         input.Age,
+	}
+	// validate the house hold head struct
+	v := validator.New()
+	if data.ValidateHouseHoldHead(v, houseHoldHead); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	// we are good now, lets create the house hold head
+	err = app.models.HouseHold.CreateNewHouseholdHead(houseHoldHead, app.config.encryption.key)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrHouseHoldDoesNotExist):
+			v.AddError("house_hold_id", "house hold does not exist")
+			app.conflictResponse(w, r, v.Errors)
+		case errors.Is(err, data.ErrHouseHoldAlreadyExists):
+			v.AddError("house_hold_id", "house hold already exists and has a head")
+			app.conflictResponse(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// output to client
+	err = app.writeJSON(w, http.StatusCreated, envelope{"house_hold_head": houseHoldHead}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

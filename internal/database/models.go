@@ -25,6 +25,17 @@ type Household struct {
 	CreatedAt     time.Time
 }
 
+type HouseholdHead struct {
+	ID          int32
+	HouseholdID int32
+	Name        string
+	NationalID  string
+	PhoneNumber string
+	Age         int32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type Program struct {
 	ID          int32
 	Name        string

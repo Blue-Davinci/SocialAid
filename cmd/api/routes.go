@@ -46,5 +46,8 @@ func (app *application) geoLocationRoutes() http.Handler {
 func (app *application) houseHoldRoutes() http.Handler {
 	router := chi.NewRouter()
 	router.Post("/", app.createNewHouseHoldHandler)
+
+	// household head
+	router.Post("/head", app.createNewHouseholdHeadHandler)
 	return router
 }
