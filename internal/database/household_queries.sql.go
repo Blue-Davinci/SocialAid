@@ -98,7 +98,7 @@ func (q *Queries) CreateNewHouseholdMember(ctx context.Context, arg CreateNewHou
 	return i, err
 }
 
-const getHouseHoldInformation = `-- name: GetHouseHoldInformation :many
+const getHouseHoldInformation = `-- name: GetHouseHoldInformation :one
 SELECT 
     h.id AS household_id, 
     h.program_id, 
@@ -132,38 +132,22 @@ type GetHouseHoldInformationRow struct {
 	HouseholdMemberCount int64
 }
 
-func (q *Queries) GetHouseHoldInformation(ctx context.Context, id int32) ([]GetHouseHoldInformationRow, error) {
-	rows, err := q.db.QueryContext(ctx, getHouseHoldInformation, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetHouseHoldInformationRow
-	for rows.Next() {
-		var i GetHouseHoldInformationRow
-		if err := rows.Scan(
-			&i.HouseholdID,
-			&i.ProgramID,
-			&i.ProgramName,
-			&i.GeolocationID,
-			&i.County,
-			&i.SubCounty,
-			&i.HouseholdHeadID,
-			&i.HouseholdHeadName,
-			&i.PhoneNumber,
-			&i.HouseholdMemberCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetHouseHoldInformation(ctx context.Context, id int32) (GetHouseHoldInformationRow, error) {
+	row := q.db.QueryRowContext(ctx, getHouseHoldInformation, id)
+	var i GetHouseHoldInformationRow
+	err := row.Scan(
+		&i.HouseholdID,
+		&i.ProgramID,
+		&i.ProgramName,
+		&i.GeolocationID,
+		&i.County,
+		&i.SubCounty,
+		&i.HouseholdHeadID,
+		&i.HouseholdHeadName,
+		&i.PhoneNumber,
+		&i.HouseholdMemberCount,
+	)
+	return i, err
 }
 
 const getHouseholdHeadByHouseholdId = `-- name: GetHouseholdHeadByHouseholdId :one

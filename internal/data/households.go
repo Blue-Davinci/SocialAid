@@ -128,7 +128,7 @@ func (m HouseHoldsManagerModel) GetHouseholdHeadByHouseholdId(houseHoldID int32)
 // GetHouseHoldInformation() retrieves a house hold by the house hold id
 // We recieve the house hold id and return the house hold and an error if there was an error
 // retrieving the house hold
-func (m HouseHoldsManagerModel) GetHouseHoldInformation(houseHoldID int32, encryption_key string) ([]*EnrichedHouseHold, error) {
+func (m HouseHoldsManagerModel) GetHouseHoldInformation(houseHoldID int32, encryption_key string) (*EnrichedHouseHold, error) {
 	// create context
 	ctx, cancel := contextGenerator(context.Background(), DefaultHouseHoldManDBContextTimeout)
 	defer cancel()
@@ -142,25 +142,30 @@ func (m HouseHoldsManagerModel) GetHouseHoldInformation(houseHoldID int32, encry
 			return nil, err
 		}
 	}
-	// confirm length is not 0
-	if len(houseHolds) == 0 {
-		return nil, ErrHouseHoldDoesNotExist
+	// prepare decrypted phone number
+	// decrypt our hex
+	decodedKey, err := DecodeEncryptionKey(encryption_key)
+	if err != nil {
+		return nil, err
+	}
+	decryptedPhoneNumber, err := DecryptData(houseHolds.PhoneNumber, decodedKey)
+	if err != nil {
+		return nil, err
 	}
 	// populate the households to the enriched household
-	enrichedHouseHolds := []*EnrichedHouseHold{}
-	for _, enrichedHousehold := range houseHolds {
-		enrichedHouseHolds = append(enrichedHouseHolds, &EnrichedHouseHold{
-			HouseHoldID:          enrichedHousehold.HouseholdID,
-			ProgramID:            enrichedHousehold.ProgramID,
-			ProgramName:          enrichedHousehold.ProgramName,
-			GeoLocationID:        enrichedHousehold.GeolocationID,
-			County:               enrichedHousehold.County,
-			SubCounty:            enrichedHousehold.SubCounty,
-			HouseHoldHeadID:      enrichedHousehold.HouseholdHeadID,
-			HouseHoldHeadName:    enrichedHousehold.HouseholdHeadName,
-			PhoneNumber:          enrichedHousehold.PhoneNumber,
-			HouseHoldMemberCount: enrichedHousehold.HouseholdMemberCount,
-		})
+
+	enrichedHouseHolds := &EnrichedHouseHold{
+		HouseHoldID:       houseHolds.HouseholdID,
+		ProgramID:         houseHolds.ProgramID,
+		ProgramName:       houseHolds.ProgramName,
+		GeoLocationID:     houseHolds.GeolocationID,
+		County:            houseHolds.County,
+		SubCounty:         houseHolds.SubCounty,
+		HouseHoldHeadID:   houseHolds.HouseholdHeadID,
+		HouseHoldHeadName: houseHolds.HouseholdHeadName,
+		// we need to decrypt the phone number before returning it
+		PhoneNumber:          decryptedPhoneNumber,
+		HouseHoldMemberCount: houseHolds.HouseholdMemberCount,
 	}
 	// return the house hold
 	return enrichedHouseHolds, nil

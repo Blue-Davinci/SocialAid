@@ -26,7 +26,7 @@ SELECT
 FROM household_heads
 WHERE household_id = $1;
 
--- name: GetHouseHoldInformation :many
+-- name: GetHouseHoldInformation :one
 SELECT 
     h.id AS household_id, 
     h.program_id, 
