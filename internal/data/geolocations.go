@@ -57,7 +57,7 @@ func (m GeoLocationsManagerModel) CreateNewGeoLocation(geoLocation *GeoLocation)
 	})
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "geolocations_county_key"`:
+		case err.Error() == `pq: duplicate key value violates unique constraint "geolocations_sub_location_key"`:
 			return ErrDuplicateGeoLocation
 		default:
 			return err

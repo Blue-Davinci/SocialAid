@@ -20,14 +20,31 @@ func (app *application) routes() http.Handler {
 	// create main router
 	v1Router := chi.NewRouter()
 	v1Router.Mount("/programs", app.programRoutes())
+	v1Router.Mount("/geo_locations", app.geoLocationRoutes())
+	v1Router.Mount("/house_holds", app.houseHoldRoutes())
 
 	// Mount to our Versioning router
 	router.Mount("/v1", v1Router)
 	return router
 }
 
+// programRoutes() is a route handler responsible for all program routes
 func (app *application) programRoutes() http.Handler {
 	router := chi.NewRouter()
 	router.Post("/", app.createNewProgramdHandler)
+	return router
+}
+
+// geoLocationRoutes() is a route handler responsible for all geo location routes
+func (app *application) geoLocationRoutes() http.Handler {
+	router := chi.NewRouter()
+	router.Post("/", app.createNewGeoLocationHandler)
+	return router
+}
+
+// houseHoldRoutes() is a route handler responsible for all house hold routes
+func (app *application) houseHoldRoutes() http.Handler {
+	router := chi.NewRouter()
+	router.Post("/", app.createNewHouseHoldHandler)
 	return router
 }

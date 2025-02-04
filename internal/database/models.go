@@ -17,6 +17,14 @@ type Geolocation struct {
 	CreatedAt   time.Time
 }
 
+type Household struct {
+	ID            int32
+	ProgramID     int32
+	GeolocationID int32
+	Name          string
+	CreatedAt     time.Time
+}
+
 type Program struct {
 	ID          int32
 	Name        string
