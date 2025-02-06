@@ -100,4 +100,8 @@ Once the server is running, you can interact with the API using Postman or Curl:
   curl -X POST http://localhost:8080/v1/house_holds/member -d '{"name": "John Doe", "program_id": 1, "geolocation_id": 2}' -H "Content-Type: application/json"
   ```
 
+- For authentication, check the `006 users.sql` migration file for the plain text token example. You will need to select the ApiKey method for authorization
+using the key: `ApiKey` and the **Token** as the Value.
+- This will allow you to access all `\house_holds` routes
+
 For more details, refer to the API documentation.
