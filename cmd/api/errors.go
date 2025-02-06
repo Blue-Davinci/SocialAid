@@ -20,6 +20,20 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 	}
 }
 
+// The authenticationRequiredResponse() method will return 403 authentication required error, that
+// is the client needs to register + auth their account to proceed.
+func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	message := "you must be authenticated to access this resource"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
+
+// The invalidAuthenticationTokenResponse() method will return invalid token error
+func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	message := "invalid or missing authentication token"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
+
 // The logError() method is a generic helper that we can use to log an error message at
 // the ERROR level.
 func (app *application) logError(r *http.Request, err error) {

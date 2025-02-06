@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
@@ -17,11 +18,15 @@ func (app *application) routes() http.Handler {
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
+	// auth middleware
+	authMiddleware := alice.New(app.authenticate, app.requireAuthenticatedUser)
 	// create main router
 	v1Router := chi.NewRouter()
 	v1Router.Mount("/programs", app.programRoutes())
 	v1Router.Mount("/geo_locations", app.geoLocationRoutes())
-	v1Router.Mount("/house_holds", app.houseHoldRoutes())
+	// we assume that households routes will require authentication
+	v1Router.With(authMiddleware.Then).Mount("/house_holds", app.houseHoldRoutes())
+	v1Router.Mount("/register", app.regRoutes())
 
 	// Mount to our Versioning router
 	router.Mount("/v1", v1Router)
@@ -53,5 +58,11 @@ func (app *application) houseHoldRoutes() http.Handler {
 	router.Post("/head", app.createNewHouseholdHeadHandler)
 	// household member
 	router.Post("/member", app.createNewHouseholdMemberHandler)
+	return router
+}
+
+func (app *application) regRoutes() http.Handler {
+	router := chi.NewRouter()
+	router.Post("/", app.testHandler)
 	return router
 }

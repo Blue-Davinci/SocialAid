@@ -54,3 +54,12 @@ type Program struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type User struct {
+	ID        int32
+	Email     string
+	Name      string
+	ApiKey    []byte
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
